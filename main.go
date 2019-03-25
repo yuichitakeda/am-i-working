@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
-	"os"
 
 	"github.com/yuichitakeda/am-i-working/scape"
 )
@@ -20,12 +19,12 @@ var pass = flag.String("p", "", "LDAP password")
 var user = flag.String("u", "", "LDAP username")
 
 func saveToFile(fileName string, login loginInfo) error {
-	data, err := json.MarshalIndent(login, "", "")
-	if err != nil {
-		return err
+	data, encodeErr := json.MarshalIndent(login, "", "")
+	if encodeErr != nil {
+		return encodeErr
 	}
 
-	err = ioutil.WriteFile(fileName, data, 0644)
+	err := ioutil.WriteFile(fileName, data, 0644)
 	if err != nil {
 		return err
 	}
@@ -33,14 +32,13 @@ func saveToFile(fileName string, login loginInfo) error {
 }
 
 func readFile(fileName string) (loginInfo, error) {
-	file, err := os.Open(fileName)
 	login := loginInfo{}
+
+	data, err := ioutil.ReadFile(fileName)
 	if err != nil {
 		return login, err
 	}
-	defer file.Close()
-	decoder := json.NewDecoder(file)
-	decodeErr := decoder.Decode(&login)
+	decodeErr := json.Unmarshal(data, &login)
 	if decodeErr != nil {
 		return login, decodeErr
 	}
@@ -58,20 +56,22 @@ func main() {
 	if login.User == "" || login.Pass == "" {
 		loginInfo, err := readFile(configFile)
 		if err != nil {
-			fmt.Println("Must provide both user and password")
+			fmt.Println("Must provide both user and password or use a config file")
 			flag.Usage()
 			return
 		}
 		login = loginInfo
+	} else {
+		err := saveToFile(configFile, login)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 
 	scape := scape.New()
+
 	scape.Login(login.User, login.Pass)
 
-	err := saveToFile(configFile, login)
-	if err != nil {
-		log.Fatal(err)
-	}
 	name := scape.Name()
 
 	isWorking := scape.IsWorking(name)
