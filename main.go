@@ -5,8 +5,10 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
+	"os/user"
 
 	"github.com/yuichitakeda/am-i-working/scape"
+	"github.com/zalando/go-keyring"
 )
 
 type loginInfo struct {
@@ -14,10 +16,14 @@ type loginInfo struct {
 	Pass string
 }
 
+type loginUser struct {
+	User string
+}
+
 type empty struct{}
 
-func saveToFile(fileName string, login loginInfo) error {
-	data, encodeErr := json.MarshalIndent(login, "", "")
+func saveToFile(fileName string, user string) error {
+	data, encodeErr := json.MarshalIndent(loginUser{User: user}, "", "")
 	if encodeErr != nil {
 		return encodeErr
 	}
@@ -29,45 +35,67 @@ func saveToFile(fileName string, login loginInfo) error {
 	return nil
 }
 
-func readFile(fileName string) (loginInfo, error) {
-	login := loginInfo{}
+func readFile(fileName string) (string, error) {
+	login := loginUser{}
 
 	data, err := ioutil.ReadFile(fileName)
 	if err != nil {
-		return login, err
+		return "", err
 	}
 	decodeErr := json.Unmarshal(data, &login)
 	if decodeErr != nil {
-		return login, decodeErr
+		return "", decodeErr
 	}
 
-	return login, nil
+	return login.User, nil
+}
+func storeCredentials(login loginInfo) {
+	keyring.Set("scape", login.User, login.Pass)
 }
 
-const configFile = "/home/yuichi/.scape_config.json"
+func retrieveCredentials(user string) string {
+	p, err := keyring.Get("scape", user)
+	if err != nil {
+		fmt.Println(err)
+		return ""
+	}
+	return p
+}
+
+func homeDir() string {
+	usr, err := user.Current()
+	if err != nil {
+		fmt.Println(err)
+		return ""
+	}
+	return usr.HomeDir
+}
 
 func main() {
-
-	pass := flag.String("p", "", "LDAP password")
-	user := flag.String("u", "", "LDAP username")
+	p := flag.String("p", "", "LDAP password")
+	u := flag.String("u", "", "LDAP username")
 
 	flag.Parse()
 
-	login := loginInfo{User: *user, Pass: *pass}
+	configFile := homeDir() + "/.scape_config.json"
+
+	login := loginInfo{User: *u, Pass: *p}
 
 	saveDone := make(chan empty)
 	isLoginInfoEmpty := (login.User == "" || login.Pass == "")
 	if isLoginInfoEmpty {
-		loginInfoFromFile, err := readFile(configFile)
+		loginUser, err := readFile(configFile)
 		if err != nil {
 			fmt.Println("Must provide both user and password or use a valid config file")
 			flag.Usage()
 			return
 		}
-		login = loginInfoFromFile
+		login.User = loginUser
+		login.Pass = retrieveCredentials(login.User)
 	} else {
 		go func() {
-			err := saveToFile(configFile, login)
+			storeCredentials(login)
+			err := saveToFile(configFile, login.User)
 			if err != nil {
 				fmt.Println("Error while saving to file")
 			}
