@@ -79,15 +79,6 @@ func readTable(table *html.Node) []string {
 	return names
 }
 
-func (scape *Scape) Name() string {
-	module := "index.php?module=home"
-	resp, err := scape.client.Get(baseAddr + module)
-	if err != nil {
-		log.Fatal(err)
-	}
-	return extractName(resp.Body)
-}
-
 func extractName(body io.ReadCloser) string {
 	doc, err := html.Parse(body)
 	if err != nil {

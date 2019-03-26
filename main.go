@@ -60,7 +60,7 @@ func main() {
 	if isLoginInfoEmpty {
 		loginInfoFromFile, err := readFile(configFile)
 		if err != nil {
-			fmt.Println("Must provide both user and password or use a config file")
+			fmt.Println("Must provide both user and password or use a valid config file")
 			flag.Usage()
 			return
 		}
