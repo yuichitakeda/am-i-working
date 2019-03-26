@@ -5,7 +5,6 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
-	"log"
 
 	"github.com/yuichitakeda/am-i-working/scape"
 )
@@ -15,8 +14,7 @@ type loginInfo struct {
 	Pass string
 }
 
-var pass = flag.String("p", "", "LDAP password")
-var user = flag.String("u", "", "LDAP username")
+type empty struct{}
 
 func saveToFile(fileName string, login loginInfo) error {
 	data, encodeErr := json.MarshalIndent(login, "", "")
@@ -49,32 +47,48 @@ func readFile(fileName string) (loginInfo, error) {
 const configFile = "/home/yuichi/.scape_config.json"
 
 func main() {
+
+	pass := flag.String("p", "", "LDAP password")
+	user := flag.String("u", "", "LDAP username")
+
 	flag.Parse()
 
 	login := loginInfo{User: *user, Pass: *pass}
 
-	if login.User == "" || login.Pass == "" {
-		loginInfo, err := readFile(configFile)
+	saveDone := make(chan empty)
+	isLoginInfoEmpty := (login.User == "" || login.Pass == "")
+	if isLoginInfoEmpty {
+		loginInfoFromFile, err := readFile(configFile)
 		if err != nil {
 			fmt.Println("Must provide both user and password or use a config file")
 			flag.Usage()
 			return
 		}
-		login = loginInfo
+		login = loginInfoFromFile
 	} else {
-		err := saveToFile(configFile, login)
-		if err != nil {
-			log.Fatal(err)
-		}
+		go func() {
+			err := saveToFile(configFile, login)
+			if err != nil {
+				fmt.Println("Error while saving to file")
+			}
+			saveDone <- empty{}
+		}()
 	}
 
 	scape := scape.New()
 
-	scape.Login(login.User, login.Pass)
+	name := scape.Login(login.User, login.Pass)
 
-	name := scape.Name()
+	if name == "" {
+		fmt.Println("Login failed")
+		return
+	}
 
 	isWorking := scape.IsWorking(name)
 
 	fmt.Println(isWorking)
+
+	if !isLoginInfoEmpty {
+		<-saveDone
+	}
 }

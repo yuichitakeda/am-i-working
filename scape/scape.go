@@ -28,9 +28,9 @@ func New() *Scape {
 	return scape
 }
 
-func (scape *Scape) Login(user, pass string) {
+func (scape *Scape) Login(user, pass string) string {
 	module := "index.php?module=autentication"
-	_, err := scape.client.PostForm(
+	resp, err := scape.client.PostForm(
 		baseAddr+module,
 		url.Values{
 			"login":  {user},
@@ -39,6 +39,7 @@ func (scape *Scape) Login(user, pass string) {
 	if err != nil {
 		log.Fatal(err)
 	}
+	return extractName(resp.Body)
 }
 
 func findTables(body io.ReadCloser) []*html.Node {
@@ -79,12 +80,12 @@ func readTable(table *html.Node) []string {
 }
 
 func (scape *Scape) Name() string {
-  module := "index.php?module=home"
+	module := "index.php?module=home"
 	resp, err := scape.client.Get(baseAddr + module)
 	if err != nil {
 		log.Fatal(err)
 	}
-  return extractName(resp.Body);
+	return extractName(resp.Body)
 }
 
 func extractName(body io.ReadCloser) string {
@@ -92,14 +93,14 @@ func extractName(body io.ReadCloser) string {
 	if err != nil {
 		log.Fatal(err)
 	}
-  var name string
+	var name string
 	var f func(*html.Node)
 	f = func(n *html.Node) {
 		if n.Type == html.ElementNode && n.Data == "h1" {
-      if c := n.FirstChild; c.Type == html.TextNode {
-        name = strings.TrimSpace(string([]rune(c.Data)[3:]))
-        return
-      }
+			if c := n.FirstChild; c.Type == html.TextNode {
+				name = strings.TrimSpace(string([]rune(c.Data)[3:]))
+				return
+			}
 		}
 		for c := n.FirstChild; c != nil; c = c.NextSibling {
 			f(c)
