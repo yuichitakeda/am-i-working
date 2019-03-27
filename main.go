@@ -113,9 +113,8 @@ func main() {
 	}
 
 	isWorking := scape.IsWorking(name)
-
-	fmt.Println(isWorking)
-
+	hours := scape.HoursToday()
+	fmt.Println(isWorking, hours)
 	if !isLoginInfoEmpty {
 		<-saveDone
 	}
