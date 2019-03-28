@@ -201,6 +201,8 @@ func sumHours(clocks []Clock) time.Duration {
 	return hours
 }
 
+var intToString = strconv.Itoa
+
 func (scape *Scape) HoursToday() time.Duration {
 	module := "index.php?module=rel_horas"
 	year, month, day := time.Now().Date()
@@ -208,9 +210,9 @@ func (scape *Scape) HoursToday() time.Duration {
 	resp, err := scape.client.PostForm(
 		baseAddr+module,
 		url.Values{
-			"dia": {strconv.Itoa(day)},
-			"mes": {strconv.Itoa(int(month))},
-			"ano": {strconv.Itoa(year)},
+			"dia": {intToString(day)},
+			"mes": {intToString(int(month))},
+			"ano": {intToString(year)},
 		})
 	if err != nil {
 		log.Fatal(err)

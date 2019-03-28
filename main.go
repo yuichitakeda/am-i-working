@@ -112,9 +112,19 @@ func main() {
 		return
 	}
 
-	isWorking := scape.IsWorking(name)
-	hours := scape.HoursToday()
-	fmt.Println(isWorking, hours)
+	workingDone := make(chan string)
+	go func() {
+		isWorking := scape.IsWorking(name)
+		workingDone <- fmt.Sprintf("%v", isWorking)
+	}()
+
+	hoursDone := make(chan string)
+	go func() {
+		hours := scape.HoursToday()
+		hoursDone <- fmt.Sprintf("%v", hours)
+	}()
+
+	fmt.Println(<-workingDone, <-hoursDone)
 	if !isLoginInfoEmpty {
 		<-saveDone
 	}
