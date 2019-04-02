@@ -196,7 +196,9 @@ func sumHours(clocks []Clock) time.Duration {
 				out = sixPm
 			}
 		}
-		hours += out.Sub(in)
+		if out.After(in) {
+			hours += out.Sub(in)
+		}
 	}
 	return hours
 }
