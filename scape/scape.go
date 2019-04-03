@@ -24,6 +24,7 @@ const baseAddr = "https://scape.lasseufpa.org/"
 // Scape TODO comments.
 type Scape struct {
 	client http.Client
+	user   string
 }
 
 func New() *Scape {
@@ -47,6 +48,7 @@ func (scape *Scape) Login(user, pass string) string {
 	if err != nil {
 		log.Fatal(err)
 	}
+	scape.user = user
 	return extractName(resp.Body)
 }
 
@@ -212,9 +214,10 @@ func (scape *Scape) HoursToday() time.Duration {
 	resp, err := scape.client.PostForm(
 		baseAddr+module,
 		url.Values{
-			"dia": {intToString(day)},
-			"mes": {intToString(int(month))},
-			"ano": {intToString(year)},
+			"dia":    {intToString(day)},
+			"mes":    {intToString(int(month))},
+			"ano":    {intToString(year)},
+			"nome[]": {scape.user},
 		})
 	if err != nil {
 		log.Fatal(err)

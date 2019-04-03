@@ -49,17 +49,12 @@ func readFile(fileName string) (string, error) {
 
 	return login.User, nil
 }
-func storeCredentials(login loginInfo) {
-	keyring.Set("scape", login.User, login.Pass)
+func storeCredentials(login loginInfo) error {
+	return keyring.Set("scape", login.User, login.Pass)
 }
 
-func retrieveCredentials(user string) string {
-	p, err := keyring.Get("scape", user)
-	if err != nil {
-		fmt.Println(err)
-		return ""
-	}
-	return p
+func retrieveCredentials(user string) (string, error) {
+	return keyring.Get("scape", user)
 }
 
 func homeDir() string {
@@ -69,6 +64,11 @@ func homeDir() string {
 		return ""
 	}
 	return usr.HomeDir
+}
+
+func loginInfoFail() {
+	fmt.Println("Must provide both user and password or use a valid config file")
+	flag.Usage()
 }
 
 func main() {
@@ -86,19 +86,19 @@ func main() {
 	if isLoginInfoEmpty {
 		loginUser, err := readFile(configFile)
 		if err != nil {
-			fmt.Println("Must provide both user and password or use a valid config file")
-			flag.Usage()
+			loginInfoFail()
 			return
 		}
 		login.User = loginUser
-		login.Pass = retrieveCredentials(login.User)
+		login.Pass, err = retrieveCredentials(login.User)
+		if err != nil {
+			loginInfoFail()
+			return
+		}
 	} else {
 		go func() {
 			storeCredentials(login)
-			err := saveToFile(configFile, login.User)
-			if err != nil {
-				fmt.Println("Error while saving to file")
-			}
+			saveToFile(configFile, login.User)
 			saveDone <- empty{}
 		}()
 	}
