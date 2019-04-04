@@ -170,18 +170,15 @@ var onePm, _ = time.Parse(timeLayout, "13:00:00")
 var twoPm, _ = time.Parse(timeLayout, "14:00:00")
 var sixPm, _ = time.Parse(timeLayout, "18:00:00")
 
-func twoDigits(i int) string {
-	return fmt.Sprintf("%02d", i)
-}
-
 func sumHours(clocks []Clock) time.Duration {
 	hours := time.Duration(0)
 	for _, clock := range clocks {
 		in, _ := time.Parse(timeLayout, clock.in)
 		out, err := time.Parse(timeLayout, clock.out)
 		if err != nil { // Não fechou o ponto
-			h, m, s := time.Now().Clock()
-			out, _ = time.Parse(timeLayout, twoDigits(h)+":"+twoDigits(m)+":"+twoDigits(s))
+			belemTime := time.FixedZone("UTC-3", -3*60*60)
+			h, m, s := time.Now().In(belemTime).Clock()
+			out, _ = time.Parse(timeLayout, fmt.Sprintf("%02d:%02d:%02d", h, m, s))
 		}
 		if in.Before(onePm) {
 			if in.Before(eightAm) {
@@ -209,7 +206,10 @@ var intToString = strconv.Itoa
 
 func (scape *Scape) HoursToday() time.Duration {
 	module := "index.php?module=rel_horas"
-	year, month, day := time.Now().Date()
+	belemTime := time.FixedZone("UTC-3", -3*60*60)
+	nowInBelem := time.Now().In(belemTime)
+
+	year, month, day := nowInBelem.Date()
 
 	resp, err := scape.client.PostForm(
 		baseAddr+module,
