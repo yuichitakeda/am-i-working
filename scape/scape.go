@@ -14,7 +14,7 @@ import (
 	"golang.org/x/net/html"
 )
 
-type Clock struct {
+type clock struct {
 	in  string
 	out string
 }
@@ -27,6 +27,7 @@ type Scape struct {
 	user   string
 }
 
+//New returns a new instance of a Scape http client with an empty cookie jar
 func New() *Scape {
 	scape := new(Scape)
 	jar, err := cookiejar.New(nil)
@@ -37,6 +38,7 @@ func New() *Scape {
 	return scape
 }
 
+//Login logs in on Scape and returns the user name
 func (scape *Scape) Login(user, pass string) string {
 	module := "index.php?module=autentication"
 	resp, err := scape.client.PostForm(
@@ -118,6 +120,7 @@ func extractUsers(body io.ReadCloser) []string {
 	return names
 }
 
+//WorkingUsers returns a slice of names which are working now
 func (scape *Scape) WorkingUsers() []string {
 	module := "index.php?module=working"
 	resp, err := scape.client.Get(baseAddr + module)
@@ -127,6 +130,7 @@ func (scape *Scape) WorkingUsers() []string {
 	return extractUsers(resp.Body)
 }
 
+// IsWorking returns true if user is working now, false otherwise
 func (scape *Scape) IsWorking(name string) bool {
 	names := scape.WorkingUsers()
 	for _, n := range names {
@@ -137,8 +141,8 @@ func (scape *Scape) IsWorking(name string) bool {
 	return false
 }
 
-func readHours(table *html.Node) []Clock {
-	clocks := make([]Clock, 0)
+func readHours(table *html.Node) []clock {
+	clocks := make([]clock, 0)
 	for row := table.FirstChild.NextSibling.FirstChild.NextSibling; row != nil; row = row.NextSibling {
 		if row.Data != "tr" {
 			continue
@@ -155,7 +159,7 @@ func readHours(table *html.Node) []Clock {
 				clockIn = strings.TrimSpace(child.Data)
 			} else if idx == 3 {
 				clockOut = strings.TrimSpace(child.Data)
-				clocks = append(clocks, Clock{in: clockIn, out: clockOut})
+				clocks = append(clocks, clock{in: clockIn, out: clockOut})
 			}
 			idx++
 		}
@@ -170,7 +174,7 @@ var onePm, _ = time.Parse(timeLayout, "13:00:00")
 var twoPm, _ = time.Parse(timeLayout, "14:00:00")
 var sixPm, _ = time.Parse(timeLayout, "18:00:00")
 
-func sumHours(clocks []Clock) time.Duration {
+func sumHours(clocks []clock) time.Duration {
 	hours := time.Duration(0)
 	for _, clock := range clocks {
 		in, _ := time.Parse(timeLayout, clock.in)
@@ -204,6 +208,7 @@ func sumHours(clocks []Clock) time.Duration {
 
 var intToString = strconv.Itoa
 
+//HoursToday calculates worked hours today
 func (scape *Scape) HoursToday() time.Duration {
 	module := "index.php?module=rel_horas"
 	belemTime := time.FixedZone("UTC-3", -3*60*60)
