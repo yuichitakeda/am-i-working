@@ -29,7 +29,7 @@ func main() {
 	saveDone := make(chan struct{})
 	isLoginInfoEmpty := (user == "" || pass == "")
 	if isLoginInfoEmpty {
-		usr, pss, err := Retrieve(configFile);
+		usr, pss, err := Retrieve(configFile)
 		if err != nil {
 			fmt.Println("Must provide both user and password or use a valid config file and a keyring")
 			flag.Usage()
@@ -56,15 +56,24 @@ func main() {
 	go func() {
 		isWorking := scape.IsWorking(name)
 		workingDone <- fmt.Sprintf("%v", isWorking)
+		close(workingDone)
 	}()
 
 	hoursDone := make(chan string)
 	go func() {
 		hours := scape.HoursToday()
 		hoursDone <- fmt.Sprintf("%v", hours)
+		close(hoursDone)
 	}()
 
-	fmt.Println(<-workingDone, <-hoursDone)
+	hoursMonthlyDone := make(chan string)
+	go func() {
+		hoursMonthly := scape.HoursMonthly()
+		hoursMonthlyDone <- fmt.Sprintf("%v", hoursMonthly)
+		close(hoursMonthlyDone)
+	}()
+
+	fmt.Println(<-workingDone, <-hoursDone, <-hoursMonthlyDone)
 	if !isLoginInfoEmpty {
 		<-saveDone
 	}

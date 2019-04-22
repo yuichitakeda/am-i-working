@@ -15,8 +15,9 @@ import (
 )
 
 type clock struct {
-	in  string
-	out string
+	date string
+	in   string
+	out  string
 }
 
 const baseAddr = "https://scape.lasseufpa.org/"
@@ -152,17 +153,19 @@ func readHours(table *html.Node) []clock {
 		}
 
 		idx := 0
-		var clockIn, clockOut string
+		var clockDate, clockIn, clockOut string
 		for col := row.FirstChild; col != nil; col = col.NextSibling {
 			child := col.FirstChild
 			if child == nil || child.Type != html.TextNode {
 				continue
 			}
-			if idx == 2 {
+			if idx == 1 {
+				clockDate = strings.TrimSpace(child.Data)
+			} else if idx == 2 {
 				clockIn = strings.TrimSpace(child.Data)
 			} else if idx == 3 {
 				clockOut = strings.TrimSpace(child.Data)
-				clocks = append(clocks, clock{in: clockIn, out: clockOut})
+				clocks = append(clocks, clock{date: clockDate, in: clockIn, out: clockOut})
 			}
 			idx++
 		}
@@ -210,6 +213,39 @@ func sumHours(clocks []clock) time.Duration {
 }
 
 var intToString = strconv.Itoa
+
+func (scape *Scape) HoursMonthly() time.Duration {
+	module := "index.php?module=rel_horas"
+	belemTime := time.FixedZone("UTC-3", -3*60*60)
+	nowInBelem := time.Now().In(belemTime)
+
+	year, month, day := nowInBelem.Date()
+
+	resp, err := scape.client.PostForm(
+		baseAddr+module,
+		url.Values{
+			"dia":        {intToString(1)},
+			"mes":        {intToString(int(month))},
+			"ano":        {intToString(year)},
+			"dia2":       {intToString(day)},
+			"mes2":       {intToString(int(month))},
+			"ano2":       {intToString(year)},
+			"entreDatas": {"entreDatas"},
+			"nome[]":     {scape.user},
+		})
+	if err != nil {
+		log.Fatal(err)
+	}
+	tables := findTables(resp.Body)
+	// tables[0] is the calendar
+	// tables[1] is the date selector
+	// tables[2] is the clock in/out time
+	// tables[3] is the total time
+
+	clocks := readHours(tables[2])
+
+	return sumHours(clocks)
+}
 
 //HoursToday calculates worked hours today
 func (scape *Scape) HoursToday() time.Duration {
