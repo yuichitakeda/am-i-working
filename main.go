@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"os/user"
+	"time"
 
 	"github.com/yuichitakeda/am-i-working/scape"
 )
@@ -43,9 +44,9 @@ func main() {
 		}()
 	}
 
-	scape := scape.New()
+	scapeApi := scape.New()
 
-	name := scape.Login(user, pass)
+	name := scapeApi.Login(user, pass)
 
 	if name == "" {
 		fmt.Println("Login failed")
@@ -54,26 +55,27 @@ func main() {
 
 	workingDone := make(chan string)
 	go func() {
-		isWorking := scape.IsWorking(name)
+		isWorking := scapeApi.IsWorking(name)
 		workingDone <- fmt.Sprintf("%v", isWorking)
 		close(workingDone)
 	}()
 
 	hoursDone := make(chan string)
 	go func() {
-		hours := scape.HoursToday()
+		hours := scapeApi.HoursToday()
 		hoursDone <- fmt.Sprintf("%v", hours)
 		close(hoursDone)
 	}()
 
-	hoursMonthlyDone := make(chan string)
+	hoursMonthlyDone := make(chan time.Duration)
 	go func() {
-		hoursMonthly := scape.HoursMonthly()
-		hoursMonthlyDone <- fmt.Sprintf("%v", hoursMonthly)
+		hoursMonthly := scapeApi.HoursMonthly()
+		hoursMonthlyDone <- hoursMonthly
 		close(hoursMonthlyDone)
 	}()
 
-	fmt.Println(<-workingDone, <-hoursDone, <-hoursMonthlyDone)
+	perc := float64(<-hoursMonthlyDone+time.Second) / float64(scape.GoalHours())
+	fmt.Println(<-workingDone, <-hoursDone, fmt.Sprintf("%.6f", perc*100))
 	if !isLoginInfoEmpty {
 		<-saveDone
 	}
