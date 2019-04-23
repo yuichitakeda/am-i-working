@@ -74,7 +74,8 @@ func main() {
 		close(hoursMonthlyDone)
 	}()
 
-	perc := float64(<-hoursMonthlyDone+time.Second) / float64(scape.GoalHours())
+	perc := float64(<-hoursMonthlyDone+time.Second) /
+		float64(scape.GoalHours())
 	fmt.Println(<-workingDone, <-hoursDone, fmt.Sprintf("%.6f", perc*100))
 	if !isLoginInfoEmpty {
 		<-saveDone

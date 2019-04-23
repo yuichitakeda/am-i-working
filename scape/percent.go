@@ -19,12 +19,15 @@ func GoalHours() time.Duration {
 	year := now.Year()
 	workDays := 0
 	first := time.Date(year, month, 1, 12, 0, 0, 0, time.Local)
-	for day := first; day.Day() != now.Day(); day = day.Add(24 * time.Hour) {
+	for day := first; day.Month() == month; day = day.Add(24 * time.Hour) {
 		switch day.Weekday() {
 		case time.Sunday, time.Monday, time.Saturday:
 
 		default:
 			workDays++
+		}
+		if day.Day() == now.Day() {
+			break
 		}
 	}
 	holy := Holidays(month, year)
