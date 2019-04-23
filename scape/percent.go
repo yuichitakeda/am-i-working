@@ -7,7 +7,7 @@ import (
 func Holidays(month time.Month, year int) int {
 	switch month {
 	case time.April:
-		return 1
+		return 2
 	}
 	return 0
 }
