@@ -185,9 +185,14 @@ func sumHours(clocks []clock) time.Duration {
 	for _, clock := range clocks {
 		in, _ := time.Parse(timeLayout, clock.in)
 		out, err := time.Parse(timeLayout, clock.out)
-		if err != nil { // Não fechou o ponto
+		if err != nil { // Did not clock out
 			belemTime := time.FixedZone("UTC-3", -3*60*60)
-			h, m, s := time.Now().In(belemTime).Clock()
+			now := time.Now().In(belemTime)
+			date, _ := time.Parse("02/01/2006", clock.date)
+			if date.Day() != now.Day() { // Forgotten clock out
+				continue
+			}
+			h, m, s := now.Clock()
 			out, _ = time.Parse(timeLayout, fmt.Sprintf("%02d:%02d:%02d", h, m, s))
 		}
 		if in.Before(onePm) {
