@@ -36,8 +36,7 @@ func New() *Scape {
 		log.Fatal(err)
 	}
 	scape.client = http.Client{
-		Jar:     jar,
-		Timeout: time.Second,
+		Jar: jar,
 	}
 	return scape
 }
