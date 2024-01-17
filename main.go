@@ -25,12 +25,23 @@ func main() {
 
 	configFile := homeDir() + "/.scape_config.json"
 
-	user, pass := *u, *p
+	user := *u
+	pass := ""
+	if user != "" {
+		fmt.Print("Password:")
+		passbyte, err := term.ReadPassword(int(os.Stdin.Fd()))
+		fmt.Println()
+		if err != nil {
+			fmt.Print("Error reading password")
+			return
+		}
 
+		pass = string(passbyte)
+	}
 	saveDone := make(chan struct{})
-	isLoginInfoEmpty := (user == "" || pass == "")
-	if isLoginInfoEmpty {
-		usr, pss, err := Retrieve(configFile)
+	isUserInfoEmpty := (user == "" || pass == "")
+	if isUserInfoEmpty {
+		usr, pss, err := RetrieveLoginInfo(configFile)
 		if err != nil {
 			fmt.Println("Must provide both user and password or use a valid config file and a keyring")
 			flag.Usage()
