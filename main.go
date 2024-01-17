@@ -3,11 +3,20 @@ package main
 import (
 	"flag"
 	"fmt"
+	"os"
 	"os/user"
 	"time"
 
 	"github.com/yuichitakeda/am-i-working/scape"
+	"golang.org/x/term"
 )
+
+func If[T any](condition bool, a, b T) T {
+	if condition {
+		return a
+	}
+	return b
+}
 
 func homeDir() string {
 	usr, err := user.Current()
@@ -18,7 +27,6 @@ func homeDir() string {
 }
 
 func main() {
-	p := flag.String("p", "", "LDAP password")
 	u := flag.String("u", "", "LDAP username")
 
 	flag.Parse()
@@ -64,10 +72,10 @@ func main() {
 		return
 	}
 
-	workingDone := make(chan string)
+	workingDone := make(chan bool)
 	go func() {
 		isWorking := scapeApi.IsWorking(name)
-		workingDone <- fmt.Sprintf("%v", isWorking)
+		workingDone <- isWorking
 		close(workingDone)
 	}()
 
@@ -89,9 +97,12 @@ func main() {
 	float64(scape.GoalHours())
 	*/
 	//fmt.Println(<-workingDone, <-hoursDone, fmt.Sprintf("%.6f", perc*100))
+	isWorking := <-workingDone
 
-	fmt.Println(<-workingDone, <-hoursDone, <-hoursMonthlyDone)
-	if !isLoginInfoEmpty {
+	fmt.Println("Working:", If(isWorking, "✅", "❌"))
+	fmt.Println("Today:  ", <-hoursDone)
+	fmt.Println("Monthly:", <-hoursMonthlyDone)
+	if !isUserInfoEmpty {
 		<-saveDone
 	}
 }
