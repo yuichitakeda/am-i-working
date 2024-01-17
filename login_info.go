@@ -2,19 +2,18 @@ package main
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"os"
 
 	"github.com/zalando/go-keyring"
 )
 
-
 func storeUserInFile(user, filename string) error {
-	jsonData, err := json.MarshalIndent(map[string]string{"user" : user}, "", "")
+	jsonData, err := json.MarshalIndent(map[string]string{"user": user}, "", "")
 	if err != nil {
 		return err
 	}
 
-	err = ioutil.WriteFile(filename, jsonData, 0644)
+	err = os.WriteFile(filename, jsonData, 0644)
 	if err != nil {
 		return err
 	}
@@ -26,7 +25,7 @@ func storePassInKeyring(user, pass string) error {
 }
 
 func retrieveUserFromFile(fileName string) (string, error) {
-	jsonData, err := ioutil.ReadFile(fileName)
+	jsonData, err := os.ReadFile(fileName)
 	if err != nil {
 		return "", err
 	}
@@ -40,31 +39,31 @@ func retrieveUserFromFile(fileName string) (string, error) {
 	return jsonMap["user"], nil
 }
 
-func retrievePassFromKeyring(user string) (string, error){
+func retrievePassFromKeyring(user string) (string, error) {
 	return keyring.Get("scape", user)
 }
 
 func Store(filename, user, pass string) error {
-	err := storeUserInFile(user, filename);
+	err := storeUserInFile(user, filename)
 	if err != nil {
 		return err
 	}
 	err = storePassInKeyring(user, pass)
-	if(err != nil){
+	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func Retrieve(filename string)(string, string, error){
-	user, err := retrieveUserFromFile(filename);
+func RetrieveLoginInfo(filename string) (string, string, error) {
+	user, err := retrieveUserFromFile(filename)
 	if err != nil {
 		return "", "", err
 	}
 
 	pass, err := retrievePassFromKeyring(user)
 	if err != nil {
-		return "", "", err;
+		return "", "", err
 	}
 
 	return user, pass, nil
